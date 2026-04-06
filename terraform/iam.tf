@@ -145,3 +145,12 @@ resource "aws_iam_role_policy_attachment" "step_function_role_policy_attachment_
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+
+#AWS IAM Instance Profile for EMR
+# The "aws_iam_instance_profile" resource creates an instance profile that can be associated with EC2 instances in the EMR cluster, allowing them to assume the EMR role and access necessary resources.
+
+resource "aws_iam_instance_profile" "emr_instance_profile" {
+  name = "${var.project_name}-${var.environment}-emr-instance-profile"
+  role = aws_iam_role.emr_role.name
+}
+
