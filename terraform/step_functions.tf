@@ -14,12 +14,18 @@ resource "aws_sfn_state_machine" "pipeline" {
       StartCrawler = {
         Type     = "Task"
         Resource = "arn:aws:states:::aws-sdk:glue:startCrawler"
-        Next     = "RunGlueJob"
+        Parameters = {
+          Name = aws_glue_crawler.glue_crawler.name
+        }
+        Next = "RunGlueJob"
       }
       RunGlueJob = {
         Type     = "Task"
         Resource = "arn:aws:states:::glue:startJobRun.sync"
-        End      = true
+        Parameters = {
+          JobName = aws_glue_job.glue_job.name
+        }
+        End = true
       }
     }
   })
