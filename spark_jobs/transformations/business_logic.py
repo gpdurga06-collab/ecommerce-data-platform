@@ -20,23 +20,34 @@ def transform_business_logic():
     df.show()
     
     
+    # revenue by customer
+    revenue_by_customer = df.groupBy("customer_id").agg(F.sum("revenue").alias("total_revenue")).orderBy(F.desc("total_revenue"))
+    revenue_by_customer.show()
+    
+    # write revenue by customer data back to S3
+    output_path = "s3a://ecommerce-data-platform-dev-curated/revenue_by_customer/REV_CUST-001.parquet"
+    revenue_by_customer.write.mode("overwrite").parquet(output_path)
+    
+    
     # write revenue data back to S3    
     output_path = "s3a://ecommerce-data-platform-dev-curated/revenue/REV-001.parquet"
     df.write.mode("overwrite").parquet(output_path)
     
     
     # top 10 products by revenue
-    top_products = df.groupBy("product_id").agg(F.sum("revenue").alias("total_revenue")).orderBy(
+    top_products = df.groupBy("product").agg(F.sum("revenue").alias("total_revenue")).orderBy(
         F.desc("total_revenue")
     ).limit(10)
     top_products.show()
+    
+    
     
     # write top products data back to S3
     output_path = "s3a://ecommerce-data-platform-dev-curated/top_products/TOP-001.parquet"
     top_products.write.mode("overwrite").parquet(output_path)
     
     #flag suspicious orders
-    df = df.withColumn("is_suspicious", F.when(F.col("revenue") > 1000, True).otherwise(False))
+    df = df.withColumn("is_suspicious", F.when(F.col("revenue") > 10000, True).otherwise(False))
     df.show()
     
     # write suspicious orders data back to S3

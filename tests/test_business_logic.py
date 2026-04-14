@@ -76,7 +76,7 @@ def test_revenue_by_customer(spark):
     assert results[0]["total_revenue"] == 500.0  # CUST-001
     assert results[1]["total_revenue"] == 50.0  # CUST-002
 
- 
+
 def test_top_products(spark):
     # Sample data for testing
     data = [
@@ -125,9 +125,9 @@ def test_flag_suspicious_orders(spark):
     results = df.select("order_id", "is_suspicious").collect()
 
     # Assert the expected suspicious order flags
-    assert results[0]["is_suspicious"] is False  # ORD-001
-    assert results[1]["is_suspicious"] is True  # ORD-002
-    assert results[2]["is_suspicious"] is False  # ORD-003
+    assert results[0]["is_suspicious"] == False  # ORD-001
+    assert results[1]["is_suspicious"] == True  # ORD-002
+    assert results[2]["is_suspicious"] == False  # ORD-003
 
 
 def test_data_cleaning(spark):
@@ -176,6 +176,7 @@ def test_total_calculation(spark):
 
 
 def test_revenue_calculation(spark):
+
     # Sample data for testing
     data = [
         {
