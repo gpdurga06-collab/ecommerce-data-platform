@@ -3,11 +3,14 @@
 import random
 import uuid
 import requests
-
-
+from datetime import datetime
+import boto3
+import json
 
 API_URL = "http://localhost:8000/orders"
+CUSTOMER_API_URL = "http://localhost:8000/customers"
 TOTAL_ORDERS = 100000
+TOTAL_CUSTOMERS = 30000
 
 # ─── Data ───
 PRODUCTS = [
@@ -21,6 +24,43 @@ CUSTOMERS = [
     {"id": 3, "name": "Charlie"},
 ]
 
+
+#Customer data to generate
+CUSTOMERS_DATA = [
+    {"id": 1, "name": "John Smith", "address": "London", "tier": "Standard"},
+    {"id": 2, "name": "Jane Doe", "address": "Manchester", "tier": "Premium"},
+    {"id": 3, "name": "Bob Johnson", "address": "Birmingham", "tier": "Standard"},
+    {"id": 4, "name": "Alice Brown", "address": "Leeds", "tier": "VIP"},
+    {"id": 5, "name": "Charlie Wilson", "address": "Edinburgh", "tier": "Premium"},
+]
+
+# Function to generate customer
+def generate_customer():
+    customer = random.choice(CUSTOMERS_DATA)
+    return {
+        "customer_id" : f"CUST-{customer['id']:03d}",
+        "name" : customer["name"],
+        "address" : customer["address"],
+        "tier" : customer["tier"],
+        "email": f"{customer['name'].lower().replace(' ', '.')}@gmail.com",
+        "phone": f"07{random.randint(100000000, 999999999)}",
+        "updated_at" : datetime.now().isoformat()
+    }
+
+# Function to send customer
+def send_customer(customer):
+    response = requests.post(
+        CUSTOMER_API_URL,
+        json=customer
+    )
+    if response.status_code == 200:
+        # Fix — return order_id from our order
+        # not from response!
+        return customer["customer_id"]
+    else:
+        print(f"Error: {response.json()}")
+        return None
+    
 
 
     
@@ -74,14 +114,37 @@ def fetch_payment_status(order_id):
         "transaction_id": f"TXN-{uuid.uuid4().hex[:8].upper()}"
     }
 
-# ─── Main ───
 if __name__ == "__main__":
+    # Send orders in batches of 1000
+    batch = []
     for i in range(TOTAL_ORDERS):
         order = generate_order()
-        order_id = send_order(order)
+        batch.append(order)
         
-        # Show progress every 100 orders
-        if i % 100 == 0:
-            print(f"Progress: {i}/{TOTAL_ORDERS} orders sent")   
+        # When batch reaches 1000 → save to S3
+        if len(batch) == 1000:
+            # Save batch as one file
+            s3 = boto3.client('s3')
+            s3.put_object(
+                Bucket='ecommerce-data-platform-dev-raw',
+                Key=f"orders/batch_{uuid.uuid4().hex[:8]}.json",
+                Body=json.dumps(batch)
+            )
+            print(f"Saved batch of 1000 orders! Total: {i+1}")
+            batch = []  # reset batch!
+
+    # Send customers in batches of 1000
+    batch = []
+    for i in range(TOTAL_CUSTOMERS):
+        customer = generate_customer()
+        batch.append(customer)
         
-        
+        if len(batch) == 1000:
+            s3 = boto3.client('s3')
+            s3.put_object(
+                Bucket='ecommerce-data-platform-dev-raw',
+                Key=f"customers/batch_{uuid.uuid4().hex[:8]}.json",
+                Body=json.dumps(batch)
+            )
+            print(f"Saved batch of 1000 customers! Total: {i+1}")
+            batch = []
