@@ -53,3 +53,57 @@ def create_order(order: Order):
             "status": "error",
             "message": str(e)
         }
+        
+# ingesting for customer data
+
+app = FastAPI(
+    title="E-Commerce Data Platform API",
+    description="REST API for ingesting CRM data",
+    version="1.0.0"
+)
+
+
+class Customer(BaseModel):
+    customer_id: str
+    name: str
+    email: str
+    address: str
+    tier: str
+    phone: str
+    updated_at: str  
+
+
+@app.get("/")
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "ecommerce-api"
+    }
+
+@app.post("/customers")
+def create_customer(customer: Customer):
+    try:
+        bucket_name = os.environ.get('BUCKET_NAME', 'local-bucket')
+        
+        s3 = boto3.client('s3')
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f"customers/{customer.customer_id}.json",
+            Body=json.dumps(customer.dict())
+        )
+        
+        logger.info(f"customer{customer.customer_id} saved!")
+        
+        return {
+            "status": "success",
+            "message": f"customer/{customer.customer_id} saved!",
+            "customer_id": customer.customer_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+        
