@@ -73,6 +73,14 @@ resource "aws_iam_role_policy_attachment" "lambda_role_policy_attachment_s3" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+
+# Lambda can trigger Step Functions
+resource "aws_iam_role_policy_attachment" "lambda_sfn_policy" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+}
+
+
 #EMR role
 # The "aws_iam_role" resource creates an IAM role that Amazon EMR can assume
 
@@ -149,6 +157,12 @@ resource "aws_iam_role_policy_attachment" "step_function_role_policy_attachment_
 resource "aws_iam_role_policy_attachment" "step_function_lambda_policy" {
   role       = aws_iam_role.step_function_role.name
   policy_arn = "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+}
+
+# Step Functions can run Glue
+resource "aws_iam_role_policy_attachment" "step_function_glue_policy" {
+  role       = aws_iam_role.step_function_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess"
 }
 
 #AWS IAM Instance Profile for EMR

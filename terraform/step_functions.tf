@@ -4,21 +4,23 @@ resource "aws_sfn_state_machine" "pipeline" {
 
   definition = jsonencode({
     Comment = "E-commerce data pipeline"
-    StartAt = "ValidateData"
+    StartAt = "StartCrawler"
     States = {
-      ValidateData = {
-        Type     = "Task"
-        Resource = aws_lambda_function.lambda_function.arn
-        Next     = "StartCrawler"
-      }
+      
       StartCrawler = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::aws-sdk:glue:startCrawler"
-        Parameters = {
-          Name = aws_glue_crawler.glue_crawler.name
-        }
-        Next = "RunGlueJob"
-      }
+      Type     = "Task"
+      Resource = "arn:aws:states:::aws-sdk:glue:startCrawler"
+      Parameters = {
+      Name = aws_glue_crawler.glue_crawler.name
+  }
+      Next = "RunGlueJob"
+      Catch = [        
+    {
+      ErrorEquals = ["Glue.CrawlerRunningException"]
+      Next        = "RunGlueJob"
+    }
+  ]
+}
       RunGlueJob = {
         Type     = "Task"
         Resource = "arn:aws:states:::glue:startJobRun.sync"
