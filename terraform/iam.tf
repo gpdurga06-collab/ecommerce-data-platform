@@ -117,6 +117,11 @@ resource "aws_iam_role_policy_attachment" "emr_role_policy_attachment_s3" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "emr_ec2_role_policy" {
+  role       = aws_iam_role.emr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role"
+}
+
 #step function role
 # The "aws_iam_role" resource creates an IAM role that AWS Step Functions can assume
 
@@ -164,6 +169,13 @@ resource "aws_iam_role_policy_attachment" "step_function_glue_policy" {
   role       = aws_iam_role.step_function_role.name
   policy_arn = "arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess"
 }
+
+
+resource "aws_iam_role_policy_attachment" "step_function_emr_policy" {
+  role       = aws_iam_role.step_function_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEMRFullAccessPolicy_v2"
+}
+
 
 #AWS IAM Instance Profile for EMR
 # The "aws_iam_instance_profile" resource creates an instance profile that can be associated with EC2 instances in the EMR cluster, allowing them to assume the EMR role and access necessary resources.

@@ -8,6 +8,7 @@ spark = SparkSession.builder \
 df = spark.read.json(
     "s3://ecommerce-data-platform-dev-raw/orders/"
 )
+
 print(f"Total raw orders: {df.count()}")
 
 df_clean = df.dropDuplicates() \

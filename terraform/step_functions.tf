@@ -22,15 +22,35 @@ resource "aws_sfn_state_machine" "pipeline" {
   ]
 }
       RunGlueJob = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::glue:startJobRun.sync"
-        Parameters = {
-          JobName = aws_glue_job.glue_job.name
-        }
-        End = true
+      Type     = "Task"
+      Resource = "arn:aws:states:::glue:startJobRun.sync"
+      Parameters = {
+        JobName = aws_glue_job.glue_job.name
       }
+      Next = "RunEMR"  
     }
-  })
+    RunEMR = {
+      Type     = "Task"
+      Resource = "arn:aws:states:::elasticmapreduce:addStep.sync"
+      Parameters = {
+        ClusterId = aws_emr_cluster.emr_cluster.id
+        Step = {
+          Name = "BusinessLogic"
+          ActionOnFailure = "CONTINUE"
+          HadoopJarStep = {
+            Jar = "command-runner.jar"
+            Args = [
+              "spark-submit",
+              "--deploy-mode", "cluster",
+              "s3://ecommerce-data-platform-dev-raw/scripts/business_logic_emr.py"
+            ]
+          }
+        }
+      }
+      End = true
+    }
+  }
+})
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-pipeline"
