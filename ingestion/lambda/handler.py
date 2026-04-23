@@ -39,7 +39,21 @@ def lambda_handler(event, context):
         else:
             logger.info("Manual trigger!")
 
-        # Trigger Step Functions
+        # Check if pipeline already running!
+        # This prevents duplicate executions!
+        running = sfn_client.list_executions(
+            stateMachineArn=state_machine_arn,
+            statusFilter='RUNNING'
+        )
+        
+        if running['executions']:
+            logger.info("Pipeline already running! Skipping!")
+            return {
+                'statusCode': 200,
+                'body': json.dumps('Pipeline already running!')
+            }
+        
+        # Only trigger if nothing running
         sfn_client.start_execution(
             stateMachineArn=state_machine_arn,
             input=json.dumps({
@@ -48,7 +62,7 @@ def lambda_handler(event, context):
             })
         )
         
-        logger.info("Step Functions triggered! ✅")
+        logger.info("Step Functions triggered!")
         
         return {
             'statusCode': 200,

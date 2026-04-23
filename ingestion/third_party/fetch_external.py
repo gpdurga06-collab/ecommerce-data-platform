@@ -35,16 +35,17 @@ CUSTOMERS_DATA = [
 ]
 
 # Function to generate customer
-def generate_customer():
-    customer = random.choice(CUSTOMERS_DATA)
+def generate_order():
+    product = random.choice(PRODUCTS)
+    customer = random.choice(CUSTOMERS)
     return {
-        "customer_id" : f"CUST-{customer['id']:03d}",
-        "name" : customer["name"],
-        "address" : customer["address"],
-        "tier" : customer["tier"],
-        "email": f"{customer['name'].lower().replace(' ', '.')}@gmail.com",
-        "phone": f"07{random.randint(100000000, 999999999)}",
-        "updated_at" : datetime.now().isoformat()
+        "order_id": f"ORD-{uuid.uuid4().hex[:8].upper()}",
+        "customer_id": f"CUST-{customer['id']:03d}",
+        "product": product["name"],
+        "price": product["price"],
+        "quantity": random.randint(1, 5),
+        "discount_percentage": round(random.uniform(0, 20), 2),
+        "payment_method": random.choice(["card", "paypal", "cash"])
     }
 
 # Function to send customer

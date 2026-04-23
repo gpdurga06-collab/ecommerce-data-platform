@@ -20,6 +20,8 @@ class Order(BaseModel):
     product: str
     price: float
     quantity: int
+    discount_percentage: float = 0.0
+    payment_method: str = "card" 
 
 @app.get("/")
 def health_check():
