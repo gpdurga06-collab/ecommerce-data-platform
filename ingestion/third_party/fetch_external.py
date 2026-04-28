@@ -1,5 +1,3 @@
-# imports
-# Correct — need the whole module
 import random
 import uuid
 import requests
@@ -24,8 +22,6 @@ CUSTOMERS = [
     {"id": 3, "name": "Charlie"},
 ]
 
-
-#Customer data to generate
 CUSTOMERS_DATA = [
     {"id": 1, "name": "John Smith", "address": "London", "tier": "Standard"},
     {"id": 2, "name": "Jane Doe", "address": "Manchester", "tier": "Premium"},
@@ -34,7 +30,7 @@ CUSTOMERS_DATA = [
     {"id": 5, "name": "Charlie Wilson", "address": "Edinburgh", "tier": "Premium"},
 ]
 
-# Function to generate customer
+# ─── Functions ───
 def generate_order():
     product = random.choice(PRODUCTS)
     customer = random.choice(CUSTOMERS)
@@ -48,83 +44,50 @@ def generate_order():
         "payment_method": random.choice(["card", "paypal", "cash"])
     }
 
-# Function to send customer
-def send_customer(customer):
-    response = requests.post(
-        CUSTOMER_API_URL,
-        json=customer
-    )
-    if response.status_code == 200:
-        # Fix — return order_id from our order
-        # not from response!
-        return customer["customer_id"]
-    else:
-        print(f"Error: {response.json()}")
-        return None
-    
-
-
-    
-def generate_order():
-    product = random.choice(PRODUCTS)
-    customer = random.choice(CUSTOMERS)
-    return {
-        "order_id": f"ORD-{uuid.uuid4().hex[:8].upper()}",
-        "customer_id": f"CUST-{customer['id']:03d}",
-        "product": product["name"],
-        "price": product["price"],
-        "quantity": random.randint(1, 5)
-    }
-
-
 def send_order(order):
-    response = requests.post(
-        API_URL,
-        json=order
-    )
+    response = requests.post(API_URL, json=order)
     if response.status_code == 200:
-        # Fix — return order_id from our order
-        # not from response!
         return order["order_id"]
     else:
         print(f"Error: {response.json()}")
         return None
-   
 
+def generate_customer():
+    customer = random.choice(CUSTOMERS_DATA)
+    return {
+        "customer_id": f"CUST-{customer['id']:03d}",
+        "name": customer["name"],
+        "address": customer["address"],
+        "tier": customer["tier"],
+        "email": f"{customer['name'].lower().replace(' ', '.')}@gmail.com",
+        "phone": f"07{random.randint(100000000, 999999999)}",
+        "updated_at": datetime.now().isoformat()
+    }
 
+def send_customer(customer):
+    response = requests.post(CUSTOMER_API_URL, json=customer)
+    if response.status_code == 200:
+        return customer["customer_id"]
+    else:
+        print(f"Error: {response.json()}")
+        return None
 
 def fetch_payment_status(order_id):
-    # Simulate payment statuses
-    statuses = [
-        "completed",
-        "pending", 
-        "failed",
-        "refunded"
-    ]
-    
-    # Randomly assign a payment status
-    # In real world this would call Stripe API:
-    # response = requests.get(
-    #     f"https://api.stripe.com/v1/charges/{order_id}",
-    #     headers={"Authorization": f"Bearer {STRIPE_API_KEY}"}
-    # )
-    
+    statuses = ["completed", "pending", "failed", "refunded"]
     return {
         "order_id": order_id,
         "status": random.choice(statuses),
         "transaction_id": f"TXN-{uuid.uuid4().hex[:8].upper()}"
     }
 
+# ─── Main ───
 if __name__ == "__main__":
     # Send orders in batches of 1000
     batch = []
     for i in range(TOTAL_ORDERS):
         order = generate_order()
         batch.append(order)
-        
-        # When batch reaches 1000 → save to S3
         if len(batch) == 1000:
-            # Save batch as one file
             s3 = boto3.client('s3')
             s3.put_object(
                 Bucket='ecommerce-data-platform-dev-raw',
@@ -132,14 +95,13 @@ if __name__ == "__main__":
                 Body=json.dumps(batch)
             )
             print(f"Saved batch of 1000 orders! Total: {i+1}")
-            batch = []  # reset batch!
+            batch = []
 
     # Send customers in batches of 1000
     batch = []
     for i in range(TOTAL_CUSTOMERS):
         customer = generate_customer()
         batch.append(customer)
-        
         if len(batch) == 1000:
             s3 = boto3.client('s3')
             s3.put_object(
