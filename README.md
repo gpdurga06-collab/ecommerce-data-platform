@@ -1,85 +1,133 @@
-# ecommerce-data-platform
-End to end data engineering project using PySpark, AWS, Databricks, Terraform, Docker and Kubernetes
-# E-Commerce Data Platform
-
-## 📋 Overview
-## 🏗️ Architecture
-## 🛠️ Tech Stack
-## 📁 Project Structure
-## 🚀 How to Run
-## 📊 Data Pipeline Flow
-## 🔧 Infrastructure
-## 📈 Monitoring
-## 🧪 Testing
-## 👨‍💻 Author
-
-
 # 🛒 E-Commerce Data Platform
 
-A production-grade, end-to-end data engineering platform built on AWS and Databricks, processing 100,000+ orders through a fully automated Medallion Architecture pipeline.
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Databricks](https://img.shields.io/badge/Databricks-%23FF3621.svg?style=for-the-badge&logo=databricks&logoColor=white)
+![Apache Spark](https://img.shields.io/badge/Apache%20Spark-FDEE21?style=for-the-badge&logo=apachespark&logoColor=black)
+![Terraform](https://img.shields.io/badge/Terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Delta Lake](https://img.shields.io/badge/Delta%20Lake-%23003366.svg?style=for-the-badge&logo=delta&logoColor=white)
+
+> A **production-grade, end-to-end data engineering platform** built on AWS and Databricks, processing **200,000+ orders** through a fully automated Medallion Architecture pipeline with real-time monitoring, SCD Type 2, and schema evolution support.
 
 ---
 
-## 📋 Overview
+## 📊 Project Stats
 
-This project demonstrates a complete data engineering solution for an e-commerce business. It ingests order and customer data through a REST API, processes it through a multi-layer pipeline using AWS services, and delivers analytics-ready Delta tables in Databricks with full monitoring and CI/CD automation.
-
-**Key capabilities:**
-- Ingests 100,000+ orders and 30,000+ customer records
-- Processes data through Bronze → Silver → Gold Medallion Architecture
-- Tracks customer history using SCD Type 2
-- Deploys containerized API to AWS EKS via automated CI/CD
-- Monitors pipeline health with AWS CloudWatch
-- Delivers business insights through Databricks Analytics Dashboard
+| Metric | Value |
+|---|---|
+| Total Orders Processed | 200,000+ |
+| Total Revenue Generated | $6M+ |
+| AWS Resources (Terraform) | 47 |
+| Pipeline Execution Time | ~4 minutes |
+| Data Layers | Bronze → Silver → Gold |
+| Test Coverage | 6 unit tests |
+| CI/CD | Fully automated |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-REST API (FastAPI/Docker/Kubernetes)
-        ↓
-AWS Lambda (validate + trigger)
-        ↓
-AWS Step Functions (orchestrate)
-        ↓
-┌─────────────────────────────────┐
-│         AWS S3 Data Lake        │
-│  Raw → Processed → Curated      │
-└─────────────────────────────────┘
-        ↓
-Glue Crawler → Glue ETL → EMR PySpark
-        ↓
-Databricks (Unity Catalog → Delta Lake)
-        ↓
-┌─────────────────────────────────┐
-│     Delta Live Tables           │
-│  Bronze → Silver → Gold         │
-│  + SCD2 Customer Dimension      │
-└─────────────────────────────────┘
-        ↓
-Analytics Dashboard + CloudWatch Monitoring
+┌─────────────────────────────────────────────────────────────┐
+│                     DATA INGESTION                          │
+│                                                             │
+│   fetch_external.py → FastAPI (Docker) → AWS EKS           │
+│         ↓                    ↓                              │
+│   Batch Files (1000/file)   REST API (/orders /customers)   │
+└─────────────────────┬───────────────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   AWS S3 RAW ZONE                           │
+│              (Medallion Architecture Layer 1)               │
+│         orders/batch_*.json  customers/batch_*.json         │
+└──────────┬──────────────────────────────────────────────────┘
+           ↓ S3 Event Notification
+┌─────────────────────────────────────────────────────────────┐
+│                   AWS LAMBDA                                │
+│         Validates batch → Checks duplicates                 │
+│         Triggers Step Functions                             │
+└──────────┬──────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────────┐
+│              AWS STEP FUNCTIONS PIPELINE                    │
+│                                                             │
+│   StartCrawler → RunGlueJob → RunEMR                        │
+│        ↓              ↓           ↓                         │
+│   Glue Crawler   Glue ETL    EMR PySpark                    │
+│   (scan S3)   (clean data)  (business logic)                │
+└──────────┬──────────────────────────────────────────────────┘
+           ↓
+┌──────────────────────────────────────────────────────────────┐
+│              S3 PROCESSED + CURATED ZONES                    │
+│                                                              │
+│   processed/orders/*.parquet   curated/revenue/*.parquet     │
+│                                curated/top_products/         │
+│                                curated/suspicious_orders/    │
+│                                curated/discount_analysis/    │
+└──────────┬───────────────────────────────────────────────────┘
+           ↓ Unity Catalog
+┌──────────────────────────────────────────────────────────────┐
+│              DATABRICKS DELTA LIVE TABLES                    │
+│                                                              │
+│   Bronze (raw) → Silver (clean) → Gold (metrics)            │
+│        ↓                                                     │
+│   dim_customer (SCD Type 2)                                  │
+│   Schema Evolution (mergeSchema)                             │
+└──────────┬───────────────────────────────────────────────────┘
+           ↓
+┌──────────────────────────────────────────────────────────────┐
+│         ANALYTICS + MONITORING                               │
+│                                                              │
+│   Databricks Dashboard    AWS CloudWatch Dashboard           │
+│   (Business metrics)      (Pipeline health)                  │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category | Tools |
+| Category | Technology |
 |---|---|
-| **Languages** | Python, SQL, HCL (Terraform), YAML |
-| **Ingestion** | FastAPI, AWS Lambda, REST APIs |
-| **Storage** | AWS S3 (Medallion Architecture), Delta Lake |
+| **Languages** | Python 3.11, SQL, HCL (Terraform), YAML |
+| **Ingestion** | FastAPI, AWS Lambda, REST API |
+| **Storage** | AWS S3, Delta Lake, Parquet |
 | **Processing** | PySpark, AWS EMR, AWS Glue ETL |
-| **Cataloguing** | AWS Glue Crawler, Glue Data Catalog, Unity Catalog |
-| **Orchestration** | AWS Step Functions, Databricks Delta Live Tables |
+| **Orchestration** | AWS Step Functions, EventBridge, DLT |
+| **Cataloguing** | AWS Glue Catalog, Databricks Unity Catalog |
 | **Analytics** | Databricks, Delta Tables, SCD Type 2 |
-| **Infrastructure** | Terraform, AWS IAM, AWS VPC |
+| **Infrastructure** | Terraform, AWS IAM, VPC |
 | **Containers** | Docker, Kubernetes, AWS EKS |
 | **CI/CD** | GitHub Actions |
 | **Monitoring** | AWS CloudWatch, Databricks Dashboard |
 | **Testing** | pytest, PySpark unit tests |
-| **Governance** | Unity Catalog, Delta Lake ACID |
+
+---
+
+## 🚀 Key Features
+
+### ✅ Fully Automated Pipeline
+New data landing in S3 automatically triggers the entire pipeline without human intervention — from Lambda validation through Glue ETL to EMR processing.
+
+### ✅ Medallion Architecture
+Three-layer data architecture (Bronze → Silver → Gold) ensuring data quality, traceability and business-ready analytics at every stage.
+
+### ✅ SCD Type 2
+Complete customer history tracking using Databricks Delta Live Tables `apply_changes` with full audit trail of all customer updates.
+
+### ✅ Schema Evolution
+Seamless handling of schema changes using PySpark `mergeSchema` — old records get NULL for new columns, new records have actual values. Zero pipeline downtime.
+
+### ✅ Infrastructure as Code
+All 47 AWS resources defined in Terraform — fully reproducible, version controlled and deployable in minutes.
+
+### ✅ Production Kubernetes
+Containerized FastAPI deployed to AWS EKS with 2 replicas, auto-restart on failure and rolling updates via CI/CD.
+
+### ✅ Real-time Monitoring
+AWS CloudWatch dashboard tracking Lambda invocations, Step Functions executions, Glue job duration and S3 storage metrics with automated alarms.
 
 ---
 
@@ -89,53 +137,50 @@ Analytics Dashboard + CloudWatch Monitoring
 ecommerce-data-platform/
 │
 ├── ingestion/
-│   ├── api/
-│   │   └── app.py                    # FastAPI REST API
-│   ├── lambda/
-│   │   ├── handler.py                # AWS Lambda function
-│   │   └── handler.zip               # Packaged Lambda
-│   └── third_party/
-│       └── fetch_external.py         # Data generator + CRM fetcher
+│   ├── api/app.py                    # FastAPI REST API
+│   ├── lambda/handler.py             # AWS Lambda function
+│   └── third_party/fetch_external.py # Data generator
 │
 ├── spark_jobs/
-│   ├── utils/
-│   │   └── spark_session.py          # Reusable SparkSession
+│   ├── utils/spark_session.py        # Reusable SparkSession
 │   └── transformations/
-│       ├── orders_transform.py       # Clean and transform orders
-│       └── business_logic.py        # Revenue, rankings, fraud detection
+│       ├── orders_transform.py       # Order transformations
+│       ├── business_logic.py         # Business logic
+│       └── business_logic_emr.py     # EMR optimized PySpark
 │
 ├── databricks/
 │   └── my_transformation.py          # Delta Live Tables pipeline
 │
 ├── terraform/
-│   ├── main.tf                       # AWS provider config
-│   ├── variables.tf                  # Input variables
-│   ├── outputs.tf                    # Output values
-│   ├── s3.tf                         # S3 buckets (raw/processed/curated)
-│   ├── iam.tf                        # IAM roles and policies
-│   ├── glue.tf                       # Glue crawler and ETL job
+│   ├── main.tf                       # AWS provider
+│   ├── variables.tf                  # Variables
+│   ├── s3.tf                         # S3 buckets
+│   ├── iam.tf                        # IAM roles
+│   ├── glue.tf                       # Glue crawler + ETL
 │   ├── lambda.tf                     # Lambda function
 │   ├── emr.tf                        # EMR cluster
-│   ├── step_functions.tf             # Step Functions pipeline
-│   ├── eks.tf                        # EKS cluster and node group
-│   └── cloudwatch.tf                 # Monitoring dashboard and alarms
+│   ├── step_functions.tf             # Pipeline orchestration
+│   ├── eks.tf                        # Kubernetes cluster
+│   ├── eventbridge.tf                # Event automation
+│   └── cloudwatch.tf                 # Monitoring
 │
 ├── kubernetes/
-│   ├── deployment.yaml               # K8s deployment (2 replicas)
-│   └── service.yaml                  # K8s NodePort service
+│   ├── deployment.yaml               # K8s deployment
+│   └── service.yaml                  # K8s service
 │
 ├── docker/
 │   ├── Dockerfile.api                # API container
-│   └── Dockerfile.spark              # PySpark container
+│   └── Dockerfile.spark              # Spark container
+│
+├── scripts/
+│   ├── upload_to_s3.py               # S3 upload utility
+│   └── setup_kubectl.py              # kubectl configuration
 │
 ├── tests/
-│   ├── test_business_logic.py        # PySpark unit tests
-│   └── test_orders_transform.py      # Transformation tests
+│   └── test_business_logic.py        # PySpark unit tests
 │
-├── .github/
-│   └── workflows/
-│       └── ci_cd.yml                 # GitHub Actions pipeline
-│
+├── glue_script.py                    # Standalone Glue ETL
+├── .github/workflows/ci_cd.yml       # GitHub Actions
 └── README.md
 ```
 
@@ -143,220 +188,150 @@ ecommerce-data-platform/
 
 ## 🔄 Data Pipeline Flow
 
-### Step 1 — Data Ingestion:
 ```
-fetch_external.py generates orders and customer data
-        ↓
-POST /orders → FastAPI validates → S3 raw zone
-POST /customers → FastAPI validates → S3 raw zone
-        ↓
-Batch files (1000 records per file) ← avoids small file problem!
-```
+Step 1 — Ingestion:
+fetch_external.py generates 200,000 orders
+→ Saves in batches of 1,000 to S3 raw zone
+→ Avoids small file problem! ✅
 
-### Step 2 — AWS Pipeline:
-```
-Lambda validates incoming data
-        ↓
+Step 2 — Event Trigger:
+New file in S3 orders/ folder
+→ S3 notification → Lambda
+→ Lambda validates batch orders
+→ Checks no duplicate pipeline running
+→ Triggers Step Functions! ✅
+
+Step 3 — AWS Pipeline:
 Step Functions orchestrates:
-  → Glue Crawler scans S3 raw zone
-  → Updates Glue Data Catalog
-  → Glue ETL cleans data → S3 processed zone
-  → EMR PySpark applies business logic:
-      → Revenue per customer
-      → Top selling products
-      → Suspicious order detection
-  → Results saved to S3 curated zone
+→ Glue Crawler scans ALL S3 files
+→ Updates Glue Data Catalog
+→ Glue ETL cleans data (mergeSchema)
+→ Writes Parquet to processed zone
+→ EMR PySpark applies business logic:
+   → Revenue by customer
+   → Top selling products
+   → Suspicious order detection
+   → Discount analysis
+→ Results to curated zone ✅
+
+Step 4 — Databricks Analytics:
+DLT pipeline (scheduled daily at 2am):
+→ Bronze: raw orders + customers from S3
+→ Silver: cleaned with quality checks
+→ Gold: revenue metrics and rankings
+→ dim_customer: SCD2 history ✅
 ```
 
-### Step 3 — Databricks Analytics:
+---
+
+## 📊 Schema Evolution Demo
+
+One of the key features of this project is demonstrating schema evolution in a production pipeline.
+
+**Old schema (100,000 orders):**
 ```
-Unity Catalog connects to S3 via IAM role
-        ↓
-Delta Live Tables pipeline runs automatically:
-  → Bronze: raw orders and customers from S3
-  → Silver: cleaned data with quality checks
-  → Gold: revenue metrics and rankings
-  → dim_customer: SCD2 customer history
-        ↓
-Databricks Dashboard shows business insights
+order_id, customer_id, product, price, quantity
 ```
+
+**New schema (100,000 orders):**
+```
+order_id, customer_id, product, price, quantity,
+discount_percentage, payment_method
+```
+
+**Result in Delta table:**
+```
+Old orders → discount_percentage = NULL ✅
+New orders → discount_percentage = 15.0 ✅
+Zero data loss! Zero pipeline changes! ✅
+```
+
+---
+
+## 🔄 SCD Type 2 Demo
+
+```
+customer_id | address    | tier     | is_current
+CUST-001    | London     | Standard | false  ← expired
+CUST-001    | Manchester | Premium  | true   ← current
+```
+
+Full customer history preserved automatically using Databricks Delta Live Tables `apply_changes` with `stored_as_scd_type=2`.
+
+---
+
+## 🏛️ Medallion Architecture
+
+| Layer | Location | Records | Purpose |
+|---|---|---|---|
+| **Bronze** | S3 raw + Delta | 200,001 | Raw as received |
+| **Silver** | S3 processed + Delta | 200,001 | Cleaned + validated |
+| **Gold** | S3 curated + Delta | 3 | Business metrics |
+| **dim_customer** | Delta (SCD2) | 951 | Customer history |
 
 ---
 
 ## 🚀 How to Run
 
 ### Prerequisites:
-- Python 3.11+
-- Java 11+
-- AWS CLI configured
-- Terraform 1.6+
-- Docker Desktop
-- kubectl
+- Python 3.11+, Java 11+, AWS CLI, Terraform 1.6+, Docker, kubectl
 
-### 1. Clone the repository:
+### Quick Start:
 ```bash
 git clone https://github.com/gpdurga06-collab/ecommerce-data-platform.git
 cd ecommerce-data-platform
-```
-
-### 2. Install dependencies:
-```bash
 pip install -r requirements.txt
-```
-
-### 3. Provision AWS infrastructure:
-```bash
-cd terraform
-terraform init
-terraform apply
-```
-
-### 4. Start the API:
-```bash
-docker run -p 8000:8000 \
-  -e AWS_ACCESS_KEY_ID=your_key \
-  -e AWS_SECRET_ACCESS_KEY=your_secret \
-  -e AWS_DEFAULT_REGION=us-east-2 \
-  -e BUCKET_NAME=ecommerce-data-platform-dev-raw \
-  gpdurga06093/ecommerce-api:latest
-```
-
-### 5. Generate data:
-```bash
+cd terraform && terraform init && terraform apply
+python scripts/upload_to_s3.py
 python ingestion/third_party/fetch_external.py
-```
-
-### 6. Run tests:
-```bash
 pytest tests/ -v
 ```
 
-### 7. Deploy to Kubernetes:
-```bash
-kubectl apply -f kubernetes/deployment.yaml
-kubectl apply -f kubernetes/service.yaml
-kubectl get pods
-```
-
 ---
 
-## 🏛️ Medallion Architecture
+## 💡 Real-World Challenges Solved
 
-| Layer | Location | Description |
-|---|---|---|
-| **Bronze** | S3 raw + Delta | Raw data as received — never modified |
-| **Silver** | S3 processed + Delta | Cleaned, validated, deduplicated |
-| **Gold** | S3 curated + Delta | Business metrics and aggregations |
+**Small File Problem** — Batch saving 1,000 records per file reduced S3 API calls by 1,000x.
 
----
+**Duplicate Pipeline Executions** — Lambda checks if Step Functions is already running before triggering a new execution.
 
-## 📊 Delta Lake Features
+**EMR Credentials** — EMR EC2 nodes need both `elasticmapreduce.amazonaws.com` AND `ec2.amazonaws.com` in IAM trust policy.
 
-| Feature | Implementation |
-|---|---|
-| **ACID Transactions** | All Delta table writes are atomic |
-| **Time Travel** | Query any previous version of data |
-| **Schema Evolution** | Add columns without rewriting data |
-| **Schema Enforcement** | Reject data that doesn't match schema |
-| **SCD Type 2** | Full customer history with start/end dates |
-
----
-
-## 🔄 SCD Type 2 — Customer Dimension
-
-Tracks complete history of customer changes:
-
-```
-customer_id  address     tier      start_date  end_date    is_current
-CUST-001     London      Standard  2026-04-16  2026-04-18  false ← expired
-CUST-001     Manchester  Premium   2026-04-18  9999-12-31  true  ← current
-```
-
----
-
-## 🔧 Infrastructure (Terraform)
-
-All AWS infrastructure is provisioned as code:
-
-| Resource | Purpose |
-|---|---|
-| S3 (3 buckets) | Raw, Processed, Curated data lake |
-| Lambda | Data validation and pipeline trigger |
-| Glue Crawler | Schema detection and catalog update |
-| Glue ETL | Basic data cleaning and transformation |
-| EMR | Heavy PySpark business logic processing |
-| Step Functions | Pipeline orchestration |
-| EKS | Production Kubernetes cluster |
-| CloudWatch | Monitoring dashboard and alarms |
-| IAM | Fine-grained security and permissions |
-
----
-
-## 🚀 CI/CD Pipeline
-
-GitHub Actions automatically runs on every push to main:
-
-```
-Push to GitHub
-        ↓
-Run pytest unit tests
-        ↓
-Build Docker image
-        ↓
-Push to Docker Hub
-        ↓
-Deploy to AWS EKS (if cluster running)
-```
-
----
-
-## 📈 Monitoring
-
-### AWS CloudWatch Dashboard:
-- Lambda invocations, errors and duration
-- Step Functions execution success/failure
-- Glue job performance metrics
-- S3 storage growth over time
-- Alarms for Lambda errors > 5 and pipeline failures
-
-### Databricks Analytics Dashboard:
-- Total orders processed (100K+)
-- Total revenue ($6M+)
-- Revenue by customer
-- Top products by revenue
-- Customer tier analysis
-
----
-
-## 🧪 Testing
-
-Unit tests cover all PySpark transformations:
-
-```bash
-pytest tests/test_business_logic.py -v
-```
-
-| Test | What it covers |
-|---|---|
-| `test_revenue_calculation` | price × quantity |
-| `test_revenue_by_customer` | groupBy customer_id |
-| `test_top_products` | orderBy revenue desc |
-| `test_flag_suspicious_orders` | revenue > threshold |
-| `test_data_cleaning` | dropDuplicates + na.drop |
-| `test_total_calculation` | total column creation |
+**Schema Evolution** — PySpark `mergeSchema` allows old and new data to coexist with NULL values for missing columns in historical records.
 
 ---
 
 ## 🌟 Key Achievements
 
-- ✅ Processed 100,000 orders end to end
-- ✅ Zero data loss with Delta Lake ACID guarantees
-- ✅ Full customer history with SCD Type 2
-- ✅ Automated CI/CD with zero manual deployments
-- ✅ Production Kubernetes on AWS EKS
-- ✅ Real time monitoring with CloudWatch
-- ✅ Data quality enforcement with DLT expectations
-- ✅ Infrastructure as Code with Terraform
+| Achievement | Detail |
+|---|---|
+| Processed 200K orders | End to end automated |
+| Zero data loss | Delta Lake ACID guarantees |
+| Schema evolution | No pipeline downtime |
+| SCD Type 2 | Full customer history |
+| 47 AWS resources | Fully as code |
+| Auto CI/CD | Push to deploy |
+| Real monitoring | CloudWatch + Databricks |
+
+---
+
+## 🗓️ Learning Roadmap
+
+```
+Phase 1 — E-Commerce Data Platform ✅ COMPLETE
+Phase 2 — Python Deep Dive (May 2026)
+Phase 3 — Terraform Deep Dive (Jun 2026)
+Phase 4 — REST API + Lambda (Jun 2026)
+Phase 5 — Docker + Kubernetes (Jul 2026)
+Phase 6 — PySpark Deep Dive (Aug 2026)
+Phase 7 — Databricks Complete (Aug 2026)
+Phase 8 — Snowflake DWH Project (Sep 2026)
+Phase 9 — Real Time Streaming (Oct 2026)
+Phase 10 — dbt + Analytics (Nov 2026)
+Phase 11 — Azure/GCP Project (Dec 2026)
+Phase 12 — Interview Prep (Jan 2027)
+Apply for jobs → Jan 2027! 🎉
+```
 
 ---
 
@@ -364,8 +339,12 @@ pytest tests/test_business_logic.py -v
 
 **Phani Durga**
 - GitHub: [@gpdurga06-collab](https://github.com/gpdurga06-collab)
-- Project: [ecommerce-data-platform](https://github.com/gpdurga06-collab/ecommerce-data-platform)
+- LinkedIn: [Add your LinkedIn URL here]
+- Email: gpdurga06@gmail.com
 
 ---
 
 *Built with ❤️ using AWS, Databricks, PySpark, Terraform, Docker and Kubernetes*
+
+![GitHub last commit](https://img.shields.io/github/last-commit/gpdurga06-collab/ecommerce-data-platform)
+![GitHub repo size](https://img.shields.io/github/repo-size/gpdurga06-collab/ecommerce-data-platform)
